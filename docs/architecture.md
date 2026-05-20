@@ -9,9 +9,9 @@ flowchart TD
     end
 
     subgraph Agents["Multi-Agent System (LangChain)"]
-        SUP["🧠 Supervisor Agent\ngpt-4o"]
-        REC["🔍 Recruiting Agent\ngpt-4o-mini · 5 tools"]
-        POL["📖 Policy Agent\nRAG · FAISS"]
+        SUP["🧠 Supervisor Agent\ngpt-4o + Memory"]
+        REC["🔍 Recruiting Agent\ngpt-4o-mini · 6 tools"]
+        POL["📖 Policy Agent\nRAG + Memory"]
     end
 
     subgraph Storage["Data Layer"]
@@ -19,7 +19,10 @@ flowchart TD
         FAISS["🗄️ FAISS Vector Store\nHR Policy PDFs"]
     end
 
-    OAI["☁️ OpenAI API"]
+    subgraph External["External Services"]
+        OAI["☁️ OpenAI API"]
+        DDG["🌐 DuckDuckGo Search"]
+    end
 
     HR --> SUP
     Employee --> POL
@@ -29,6 +32,7 @@ flowchart TD
     SUP -->|policy_agent_tool| POL
 
     REC --> DB
+    REC -.->|search_market_intelligence| DDG
     POL --> FAISS
 
     Agents --> OAI
