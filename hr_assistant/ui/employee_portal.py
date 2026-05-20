@@ -9,6 +9,7 @@ import streamlit as st
 from langchain_core.tracers.langchain import wait_for_all_tracers
 from langchain_openai import ChatOpenAI
 
+from hr_assistant.memory import get_rag_memory
 from hr_assistant.rag import get_rag_chain, load_vector_store
 
 _WELCOME_MSG = {
@@ -49,6 +50,13 @@ def _init_chat_history() -> None:
 
 
 def _render_chat_history() -> None:
+    col1, col2 = st.columns([4, 1])
+    with col2:
+        if st.button("🗑️ Clear Memory", use_container_width=True, help="Reset conversation memory"):
+            st.session_state.employee_messages = [_WELCOME_MSG]
+            if "policy_memory" in st.session_state:
+                del st.session_state["policy_memory"]
+            st.rerun()
     for msg in st.session_state.employee_messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -68,9 +76,25 @@ def _handle_user_input(vector_store) -> None:
             try:
                 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
                 rag_chain = get_rag_chain(vector_store, llm)
-                response = rag_chain.invoke({"input": user_input})
+
+                # Load (or initialise) session-scoped memory for this chatbot
+                memory = get_rag_memory()
+                history = memory.load_memory_variables({})
+                chat_history = history.get("chat_history", [])
+
+                response = rag_chain.invoke({
+                    "input": user_input,
+                    "chat_history": chat_history,
+                })
                 wait_for_all_tracers()
                 answer = response["answer"]
+
+                # Save this turn into memory
+                memory.save_context(
+                    {"input": user_input},
+                    {"answer": answer},
+                )
+
                 st.markdown(answer)
                 st.session_state.employee_messages.append(
                     {"role": "assistant", "content": answer}

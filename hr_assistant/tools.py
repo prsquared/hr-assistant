@@ -6,19 +6,23 @@ tool-calling interface. Tools are intentionally stateless — they read from the
 shared data store but do not modify it.
 
 Tools:
-  parse_resume              — Extract structured info from raw resume text
-  match_job_description     — Score a resume against a job description
+  parse_resume                 — Extract structured info from raw resume text
+  match_job_description        — Score a resume against a job description
   generate_interview_questions — Generate targeted interview questions
-  list_jobs                 — Return all active job postings
-  get_candidates            — Return candidate applications (optionally filtered by job)
+  list_jobs                    — Return all active job postings
+  get_candidates               — Return candidate applications (optionally filtered by job)
+  search_market_intelligence   — Web search for salary benchmarks and skills trends
 """
 
 import json
 
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
 from hr_assistant.data_store import load_jobs, load_applications
+
+_ddg_search = DuckDuckGoSearchRun()
 
 
 @tool
@@ -93,3 +97,15 @@ def get_candidates(job_id: str = None) -> str:
     if not apps:
         return "No applications found."
     return json.dumps(apps, indent=2)
+
+
+@tool
+def search_market_intelligence(query: str) -> str:
+    """Search the web for real-time job market data such as salary benchmarks,
+    in-demand skills, hiring trends, or competitor job postings for a given role.
+    Use this when the user asks about market rates, typical salaries, or what
+    skills are currently trending for a position."""
+    try:
+        return _ddg_search.run(query)
+    except Exception as e:
+        return f"Web search failed: {e}"

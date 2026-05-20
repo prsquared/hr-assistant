@@ -1,18 +1,6 @@
 """
 agents.py — Agent factory functions for the multi-agent HR system.
 
-Architecture:
-  ┌────────────────────────────────────┐
-  │         Supervisor Agent           │  ← Entry point (orchestrator)
-  │  Routes requests via tool-calling  │
-  └─────────┬──────────────────────────┘
-            │
-    ┌───────┴───────┐
-    ▼               ▼
-  Recruiting      Policy
-  Agent           Agent (RAG)
-  (5 tools)       (FAISS retrieval)
-
 Public API:
   get_recruiting_agent(llm) -> AgentExecutor
   get_supervisor_agent(llm, recruiting_executor, policy_rag_chain) -> AgentExecutor
@@ -28,15 +16,19 @@ from hr_assistant.tools import (
     generate_interview_questions,
     list_jobs,
     get_candidates,
+    search_market_intelligence,
 )
 from hr_assistant.prompts import SUPERVISOR_PROMPT, RECRUITING_AGENT_PROMPT
 
 
-def get_recruiting_agent(llm) -> AgentExecutor:
-    """Builds the Recruiting Agent equipped with resume and job-matching tools.
+def get_recruiting_agent(llm, memory=None) -> AgentExecutor:
+    """Builds the Recruiting Agent equipped with resume, job-matching, and web search tools.
 
     Args:
-        llm: A LangChain-compatible LLM (e.g. ChatOpenAI).
+        llm:    A LangChain-compatible LLM (e.g. ChatOpenAI).
+        memory: Optional LangChain memory object for conversation history.
+                When provided, chat_history is automatically injected into
+                each invocation via the MessagesPlaceholder in the prompt.
 
     Returns:
         An AgentExecutor that accepts {"input": str} and returns {"output": str}.
@@ -47,6 +39,7 @@ def get_recruiting_agent(llm) -> AgentExecutor:
         generate_interview_questions,
         list_jobs,
         get_candidates,
+        search_market_intelligence,
     ]
 
     prompt = ChatPromptTemplate.from_messages([
@@ -57,10 +50,15 @@ def get_recruiting_agent(llm) -> AgentExecutor:
     ])
 
     agent = create_openai_tools_agent(llm, tools, prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+    return AgentExecutor(
+        agent=agent,
+        tools=tools,
+        memory=memory,
+        verbose=True,
+    )
 
 
-def get_supervisor_agent(llm, recruiting_executor, policy_rag_chain=None) -> AgentExecutor:
+def get_supervisor_agent(llm, recruiting_executor, policy_rag_chain=None, memory=None) -> AgentExecutor:
     """Builds the Supervisor Agent that routes to Recruiting or Policy agents.
 
     The Recruiting and Policy agents are exposed to the Supervisor as callable
@@ -71,6 +69,8 @@ def get_supervisor_agent(llm, recruiting_executor, policy_rag_chain=None) -> Age
         recruiting_executor: A pre-built Recruiting AgentExecutor.
         policy_rag_chain:    A pre-built RAG retrieval chain, or None if no
                              policies have been uploaded yet.
+        memory:              Optional LangChain memory object for conversation
+                             history across turns within a session.
 
     Returns:
         An AgentExecutor that accepts {"input": str} and returns {"output": str}.
@@ -79,7 +79,7 @@ def get_supervisor_agent(llm, recruiting_executor, policy_rag_chain=None) -> Age
     @tool
     def recruiting_agent_tool(query: str) -> str:
         """Delegate to the Recruiting Agent for resume parsing, candidate evaluation,
-        job matching, and interview question generation."""
+        job matching, interview question generation, and job market research."""
         response = recruiting_executor.invoke({"input": query})
         return response["output"]
 
@@ -105,4 +105,9 @@ def get_supervisor_agent(llm, recruiting_executor, policy_rag_chain=None) -> Age
     ])
 
     agent = create_openai_tools_agent(llm, tools, prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+    return AgentExecutor(
+        agent=agent,
+        tools=tools,
+        memory=memory,
+        verbose=True,
+    )

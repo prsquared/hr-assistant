@@ -186,6 +186,19 @@ def save_job(title: str, description: str) -> dict:
     return new_job
 
 
+def delete_job(job_id: str) -> None:
+    """Deletes a job opening and all associated candidate applications.
+
+    Args:
+        job_id: The ID of the job to remove.
+    """
+    init_db()
+    with _get_conn() as conn:
+        conn.execute("DELETE FROM applications WHERE job_id = ?", (job_id,))
+        conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
+
+
+
 # ---------------------------------------------------------------------------
 # Application helpers
 # ---------------------------------------------------------------------------
@@ -247,6 +260,17 @@ def get_applications_for_job(job_id: str) -> list:
             (job_id,),
         ).fetchall()
     return [_row_to_dict(r) for r in rows]
+
+
+def has_applied(job_id: str, candidate_name: str) -> bool:
+    """Checks if a candidate has already applied for a given job."""
+    init_db()
+    with _get_conn() as conn:
+        count = conn.execute(
+            "SELECT COUNT(*) FROM applications WHERE job_id = ? AND LOWER(candidate_name) = LOWER(?)",
+            (job_id, candidate_name),
+        ).fetchone()[0]
+    return count > 0
 
 
 def get_top_candidates(job_id: str, top_n: int = 3) -> list:

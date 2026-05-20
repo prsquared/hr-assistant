@@ -14,7 +14,7 @@ User Request
      ▼
 ┌─────────────────────┐
 │   Supervisor Agent   │  ← Orchestrator: classifies and delegates requests
-│   (GPT-4o)           │
+│   (GPT-4o + Memory)  │
 └──────────┬──────────┘
            │ tool-calling
      ┌─────┴──────┐
@@ -22,16 +22,16 @@ User Request
 ┌─────────────┐  ┌──────────────────┐
 │  Recruiting  │  │   Policy Agent   │
 │    Agent     │  │   (RAG + FAISS)  │
-│  (GPT-4o-mini│  │  (GPT-4o-mini)   │
-│  + 5 tools)  │  │                  │
+│  (GPT-4o-mini│  │  (GPT-4o-mini    │
+│  + 6 tools)  │  │   + Memory)      │
 └─────────────┘  └──────────────────┘
 ```
 
 | Agent | Role | Implementation |
 |---|---|---|
-| **Supervisor** | Routes requests to the right agent | `AgentExecutor` with two agent-as-tool delegates |
-| **Recruiting Agent** | Resume parsing, ATS scoring, interview Q generation | `AgentExecutor` with 5 LangChain `@tool` functions |
-| **Policy Agent** | Employee handbook / HR policy Q&A | FAISS vector store + LangChain RAG chain |
+| **Supervisor** | Routes requests to the right agent | `AgentExecutor` with two agent-as-tool delegates and `ConversationSummaryBufferMemory` |
+| **Recruiting Agent** | Resume parsing, ATS scoring, interview Q generation, and Job Market Web Search | `AgentExecutor` with 6 LangChain `@tool` functions including DuckDuckGo search |
+| **Policy Agent** | Employee handbook / HR policy Q&A | FAISS vector store + LangChain RAG chain with `ConversationBufferWindowMemory` |
 
 ---
 
@@ -39,9 +39,9 @@ User Request
 
 | Portal | Feature |
 |---|---|
-| **HR Manager** | Upload & index HR policy PDFs · Post job openings · View ranked candidates with ATS scores · Chat with the Supervisor Agent |
-| **Employee** | Ask natural-language questions about company policies, benefits, and vacation (RAG-powered) |
-| **Candidate** | Browse open positions · Submit applications with PDF or TXT resume upload · Automatic ATS scoring on submission |
+| **HR Manager** | Upload & index HR policy PDFs · Post and delete job openings · View ranked candidates with ATS scores · Multi-turn chat with the Supervisor Agent |
+| **Employee** | Ask natural-language questions about company policies, benefits, and vacation (RAG-powered with memory) |
+| **Candidate** | Browse open positions · Submit applications with PDF or TXT resume upload · Prevents duplicate applications · Automatic ATS scoring on submission |
 
 ---
 
@@ -53,6 +53,8 @@ User Request
 | Agents | [LangChain](https://python.langchain.com/) — `AgentExecutor`, `create_openai_tools_agent` |
 | LLMs | [OpenAI](https://platform.openai.com/) — `gpt-4o` (Supervisor), `gpt-4o-mini` (tools & RAG) |
 | Vector Search | [FAISS](https://github.com/facebookresearch/faiss) (local, persisted to disk) |
+| Data Store | [SQLite3](https://docs.python.org/3/library/sqlite3.html) |
+| Web Search | [DuckDuckGo](https://duckduckgo.com/) |
 | PDF Parsing | [PyPDF](https://pypdf.readthedocs.io/) |
 | Observability | [LangSmith](https://smith.langchain.com/) tracing (optional) |
 | Package Manager | [uv](https://docs.astral.sh/uv/) |
@@ -70,15 +72,15 @@ hr-assistant/
 ├── hr_assistant/             # Core application package
 │   ├── __init__.py
 │   ├── agents.py             # Supervisor & Recruiting agent factories
-│   ├── tools.py              # LangChain @tool definitions
+│   ├── tools.py              # LangChain @tool definitions including Web Search
 │   ├── rag.py                # FAISS vector store + RAG chain
 │   ├── evaluator.py          # LLM-powered ATS resume scorer
 │   ├── prompts.py            # System prompt strings
-│   └── data_store.py         # JSON persistence layer
+│   ├── memory.py             # Agent conversation memory functions
+│   └── data_store.py         # SQLite3 persistence layer
 │
 └── data/                     # Runtime data (git-ignored)
-    ├── jobs.json
-    ├── applications.json
+    ├── hr_assistant.db       # SQLite database for jobs and applications
     ├── policies/             # Uploaded HR policy PDFs
     └── faiss_index/          # Persisted FAISS vector index
 ```

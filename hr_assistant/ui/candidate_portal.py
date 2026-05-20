@@ -8,7 +8,7 @@ Exported functions:
 
 import streamlit as st
 
-from hr_assistant.data_store import load_jobs, save_application
+from hr_assistant.data_store import load_jobs, save_application, has_applied
 from hr_assistant.evaluator import evaluate_resume_for_job
 
 
@@ -68,19 +68,29 @@ def _render_application_form(job: dict) -> None:
         st.error("Please upload your resume.")
         return
 
+    if has_applied(job["id"], cand_name):
+        st.error(f"You have already applied for this job, {cand_name}. We'll be in touch!")
+        return
+
     with st.spinner("Analyzing resume matching score..."):
         resume_text = _extract_resume_text(resume_file)
-        if resume_text:
-            eval_result = evaluate_resume_for_job(resume_text, job["description"])
-            save_application(
-                job_id=job["id"],
-                candidate_name=cand_name,
-                resume_filename=resume_file.name,
-                resume_text=resume_text,
-                ats_score=eval_result["ats_score"],
-                fit_reason=eval_result["fit_reason"],
+        if not resume_text:
+            st.error(
+                "Could not extract any text from the uploaded resume. "
+                "Please check the file and try again."
             )
-            st.success("✓ Application successfully submitted!")
+            return
+        eval_result = evaluate_resume_for_job(resume_text, job["description"])
+        save_application(
+            job_id=job["id"],
+            candidate_name=cand_name,
+            resume_filename=resume_file.name,
+            resume_text=resume_text,
+            ats_score=eval_result["ats_score"],
+            fit_reason=eval_result["fit_reason"],
+        )
+    st.success("✓ Application successfully submitted! The HR team will be in touch.")
+    st.rerun()
 
 
 def _extract_resume_text(resume_file) -> str:

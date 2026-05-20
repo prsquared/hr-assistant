@@ -16,11 +16,13 @@ from langchain_openai import ChatOpenAI
 from hr_assistant.agents import get_recruiting_agent, get_supervisor_agent
 from hr_assistant.data_store import (
     POLICIES_DIR,
+    delete_job,
     get_policies_list,
     get_top_candidates,
     load_jobs,
     save_job,
 )
+from hr_assistant.memory import get_agent_memory
 from hr_assistant.rag import get_rag_chain, load_vector_store, rebuild_index_from_policies
 
 
@@ -107,6 +109,33 @@ def _render_jobs_tab() -> None:
     if not selected_job:
         return
 
+    # ---- Delete job ----
+    confirm_key = f"confirm_delete_{selected_job['id']}"
+    col_info, col_del = st.columns([5, 1])
+    with col_del:
+        if not st.session_state.get(confirm_key):
+            if st.button(
+                "🗑️ Delete",
+                key=f"del_{selected_job['id']}",
+                use_container_width=True,
+                help="Delete this job listing and all its applications",
+            ):
+                st.session_state[confirm_key] = True
+                st.rerun()
+        else:
+            st.warning("Delete this job and all its applications?")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("✅ Confirm", key=f"confirm_yes_{selected_job['id']}", use_container_width=True):
+                    delete_job(selected_job["id"])
+                    st.session_state.pop(confirm_key, None)
+                    st.success(f"'{selected_job['title']}' deleted.")
+                    st.rerun()
+            with c2:
+                if st.button("❌ Cancel", key=f"confirm_no_{selected_job['id']}", use_container_width=True):
+                    st.session_state.pop(confirm_key, None)
+                    st.rerun()
+
     st.markdown(
         f"""
         <div style="background-color: rgba(128,128,128,0.05); padding: 15px;
@@ -184,6 +213,20 @@ def _render_agent_chat_tab() -> None:
             }
         ]
 
+    # Memory clear button
+    col1, col2 = st.columns([4, 1])
+    with col2:
+        if st.button("🗑️ Clear Memory", use_container_width=True, help="Reset conversation memory"):
+            st.session_state.agent_messages = [
+                {
+                    "role": "assistant",
+                    "content": "Memory cleared! Starting a fresh conversation.",
+                }
+            ]
+            if "agent_memory" in st.session_state:
+                del st.session_state["agent_memory"]
+            st.rerun()
+
     for msg in st.session_state.agent_messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -200,12 +243,18 @@ def _render_agent_chat_tab() -> None:
         st_callback = StreamlitCallbackHandler(st.container())
         try:
             llm = ChatOpenAI(model="gpt-4o", temperature=0)
-            recruiting_executor = get_recruiting_agent(llm)
+
+            # Initialise (or retrieve) session-scoped conversation memory
+            memory = get_agent_memory(llm)
+
+            recruiting_executor = get_recruiting_agent(llm, memory=memory)
 
             vector_store = load_vector_store()
             policy_rag_chain = get_rag_chain(vector_store, llm) if vector_store else None
 
-            supervisor = get_supervisor_agent(llm, recruiting_executor, policy_rag_chain)
+            supervisor = get_supervisor_agent(
+                llm, recruiting_executor, policy_rag_chain, memory=memory
+            )
             response = supervisor.invoke(
                 {"input": agent_input},
                 config={"callbacks": [st_callback]},
