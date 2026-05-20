@@ -1,0 +1,16 @@
+[project]
+name = "hr-assistant"
+version = "0.1.0"
+description = "Agentic HR Recruiting Assistant"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.30.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.2.post1",
+    "faiss-cpu>=1.7.4",
+    "pypdf>=4.0.0",
+    "python-dotenv>=1.0.1",
+    "tiktoken>=0.5.2",
+    "langchain-community>=0.4.1",
+]

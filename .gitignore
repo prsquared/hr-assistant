@@ -1,0 +1,33 @@
+# Python
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables (contains API keys — never commit)
+.env
+
+# Runtime data (generated at application startup)
+data/jobs.json
+data/applications.json
+data/hr_assistant.db
+data/faiss_index/
+data/policies/
+
+# Stray uploaded files
+*.pdf
+!sample_docs/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
