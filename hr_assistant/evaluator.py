@@ -48,7 +48,7 @@ Respond with valid JSON only.
 """
 
     try:
-        response = llm.invoke(prompt)
+        response = llm.invoke(prompt, config={"run_name": "ATS_Resume_Evaluator"})
         from langchain_core.tracers.langchain import wait_for_all_tracers
         wait_for_all_tracers()
 

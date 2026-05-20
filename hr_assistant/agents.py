@@ -80,7 +80,10 @@ def get_supervisor_agent(llm, recruiting_executor, policy_rag_chain=None, memory
     def recruiting_agent_tool(query: str) -> str:
         """Delegate to the Recruiting Agent for resume parsing, candidate evaluation,
         job matching, interview question generation, and job market research."""
-        response = recruiting_executor.invoke({"input": query})
+        response = recruiting_executor.invoke(
+            {"input": query},
+            config={"run_name": "Recruiting_Agent"}
+        )
         return response["output"]
 
     @tool
@@ -92,7 +95,10 @@ def get_supervisor_agent(llm, recruiting_executor, policy_rag_chain=None, memory
                 "The policy knowledge base is not yet initialized. "
                 "Please ask HR to upload a policy PDF first."
             )
-        response = policy_rag_chain.invoke({"input": query})
+        response = policy_rag_chain.invoke(
+            {"input": query},
+            config={"run_name": "Policy_Agent"}
+        )
         return response["answer"]
 
     tools = [recruiting_agent_tool, policy_agent_tool]

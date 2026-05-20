@@ -257,7 +257,7 @@ def _render_agent_chat_tab() -> None:
             )
             response = supervisor.invoke(
                 {"input": agent_input},
-                config={"callbacks": [st_callback]},
+                config={"callbacks": [st_callback], "run_name": "Supervisor_Agent"},
             )
             wait_for_all_tracers()
 

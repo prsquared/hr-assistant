@@ -82,10 +82,13 @@ def _handle_user_input(vector_store) -> None:
                 history = memory.load_memory_variables({})
                 chat_history = history.get("chat_history", [])
 
-                response = rag_chain.invoke({
-                    "input": user_input,
-                    "chat_history": chat_history,
-                })
+                response = rag_chain.invoke(
+                    {
+                        "input": user_input,
+                        "chat_history": chat_history,
+                    },
+                    config={"run_name": "Employee_Policy_Agent"},
+                )
                 wait_for_all_tracers()
                 answer = response["answer"]
 
