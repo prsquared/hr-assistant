@@ -25,6 +25,7 @@ from hr_assistant.data_store import (
 )
 from hr_assistant.memory import get_agent_memory
 from hr_assistant.rag import get_rag_chain, load_vector_store, rebuild_index_from_policies
+from hr_assistant.callbacks import LoggingCallbackHandler
 
 
 def render_hr_portal() -> None:
@@ -243,7 +244,7 @@ def _render_agent_chat_tab() -> None:
     with st.chat_message("assistant"):
         st_callback = StreamlitCallbackHandler(st.container())
         try:
-            llm = ChatOpenAI(model=SUPERVISOR_LLM_MODEL, temperature=0)
+            llm = ChatOpenAI(model=SUPERVISOR_LLM_MODEL, temperature=0, stream_usage=True)
 
             # Initialise (or retrieve) session-scoped conversation memory
             memory = get_agent_memory(llm)
@@ -256,9 +257,10 @@ def _render_agent_chat_tab() -> None:
             supervisor = get_supervisor_agent(
                 llm, recruiting_executor, policy_rag_chain, memory=memory
             )
+            log_callback = LoggingCallbackHandler()
             response = supervisor.invoke(
                 {"input": agent_input},
-                config={"callbacks": [st_callback], "run_name": "Supervisor_Agent"},
+                config={"callbacks": [st_callback, log_callback], "run_name": "Supervisor_Agent"},
             )
             wait_for_all_tracers()
 

@@ -21,6 +21,7 @@ data/applications.json
 data/hr_assistant.db
 data/faiss_index/
 data/policies/
+logs/
 
 # Stray uploaded files
 *.pdf

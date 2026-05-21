@@ -12,6 +12,7 @@ from langchain_openai import ChatOpenAI
 from hr_assistant.config import BASE_LLM_MODEL
 from hr_assistant.memory import get_rag_memory
 from hr_assistant.rag import get_rag_chain, load_vector_store
+from hr_assistant.callbacks import LoggingCallbackHandler
 
 _WELCOME_MSG = {
     "role": "assistant",
@@ -75,7 +76,7 @@ def _handle_user_input(vector_store) -> None:
     with st.chat_message("assistant"):
         with st.spinner("Searching company documents..."):
             try:
-                llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0)
+                llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0, stream_usage=True)
                 rag_chain = get_rag_chain(vector_store, llm)
 
                 # Load (or initialise) session-scoped memory for this chatbot
@@ -83,12 +84,13 @@ def _handle_user_input(vector_store) -> None:
                 history = memory.load_memory_variables({})
                 chat_history = history.get("chat_history", [])
 
+                log_callback = LoggingCallbackHandler()
                 response = rag_chain.invoke(
                     {
                         "input": user_input,
                         "chat_history": chat_history,
                     },
-                    config={"run_name": "Employee_Policy_Agent"},
+                    config={"callbacks": [log_callback], "run_name": "Employee_Policy_Agent"},
                 )
                 wait_for_all_tracers()
                 answer = response["answer"]

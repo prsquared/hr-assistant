@@ -29,7 +29,7 @@ _ddg_search = DuckDuckGoSearchRun()
 @tool
 def parse_resume(resume_text: str) -> str:
     """Extracts skills, experience, education, and a summary from a resume."""
-    llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0)
+    llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0, stream_usage=True)
     prompt = f"""\
 Extract the following structured information from the resume below:
   - Skills (bullet list)
@@ -46,7 +46,7 @@ Resume:
 @tool
 def match_job_description(resume_text: str, jd_text: str) -> str:
     """Compares a resume to a job description and returns a match analysis."""
-    llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0)
+    llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0, stream_usage=True)
     prompt = f"""\
 Compare the candidate's resume to the job description below.
 
@@ -68,7 +68,7 @@ Job Description:
 @tool
 def generate_interview_questions(missing_skills_or_role_reqs: str) -> str:
     """Generates 3–5 targeted interview questions for a candidate's skill gaps."""
-    llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0.7)
+    llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0.7, stream_usage=True)
     prompt = f"""\
 Generate 3–5 targeted, professional interview questions to assess the following
 missing skills or role requirements:

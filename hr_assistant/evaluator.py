@@ -28,6 +28,7 @@ def evaluate_resume_for_job(resume_text: str, jd_text: str) -> dict:
     llm = ChatOpenAI(
         model=BASE_LLM_MODEL,
         temperature=0,
+        stream_usage=True,
         model_kwargs={"response_format": {"type": "json_object"}},
     )
 
