@@ -10,6 +10,8 @@ import json
 
 from langchain_openai import ChatOpenAI
 
+from hr_assistant.config import BASE_LLM_MODEL
+
 
 def evaluate_resume_for_job(resume_text: str, jd_text: str) -> dict:
     """Evaluates a resume against a job description using an LLM.
@@ -24,7 +26,7 @@ def evaluate_resume_for_job(resume_text: str, jd_text: str) -> dict:
             "fit_reason" (str)        — 2–3 sentence professional explanation
     """
     llm = ChatOpenAI(
-        model="gpt-4o-mini",
+        model=BASE_LLM_MODEL,
         temperature=0,
         model_kwargs={"response_format": {"type": "json_object"}},
     )

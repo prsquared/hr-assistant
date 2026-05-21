@@ -14,6 +14,7 @@ from langchain_core.tracers.langchain import wait_for_all_tracers
 from langchain_openai import ChatOpenAI
 
 from hr_assistant.agents import get_recruiting_agent, get_supervisor_agent
+from hr_assistant.config import SUPERVISOR_LLM_MODEL
 from hr_assistant.data_store import (
     POLICIES_DIR,
     delete_job,
@@ -242,7 +243,7 @@ def _render_agent_chat_tab() -> None:
     with st.chat_message("assistant"):
         st_callback = StreamlitCallbackHandler(st.container())
         try:
-            llm = ChatOpenAI(model="gpt-4o", temperature=0)
+            llm = ChatOpenAI(model=SUPERVISOR_LLM_MODEL, temperature=0)
 
             # Initialise (or retrieve) session-scoped conversation memory
             memory = get_agent_memory(llm)

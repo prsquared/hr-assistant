@@ -9,6 +9,7 @@ import streamlit as st
 from langchain_core.tracers.langchain import wait_for_all_tracers
 from langchain_openai import ChatOpenAI
 
+from hr_assistant.config import BASE_LLM_MODEL
 from hr_assistant.memory import get_rag_memory
 from hr_assistant.rag import get_rag_chain, load_vector_store
 
@@ -74,7 +75,7 @@ def _handle_user_input(vector_store) -> None:
     with st.chat_message("assistant"):
         with st.spinner("Searching company documents..."):
             try:
-                llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+                llm = ChatOpenAI(model=BASE_LLM_MODEL, temperature=0)
                 rag_chain = get_rag_chain(vector_store, llm)
 
                 # Load (or initialise) session-scoped memory for this chatbot
