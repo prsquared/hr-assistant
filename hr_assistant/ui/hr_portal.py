@@ -12,6 +12,7 @@ import streamlit as st
 from langchain_community.callbacks import StreamlitCallbackHandler
 from langchain_core.tracers.langchain import wait_for_all_tracers
 from langchain_openai import ChatOpenAI
+from streamlit.runtime.scriptrunner_utils.exceptions import StopException
 
 from hr_assistant.agents import get_recruiting_agent, get_supervisor_agent
 from hr_assistant.config import SUPERVISOR_LLM_MODEL
@@ -268,5 +269,7 @@ def _render_agent_chat_tab() -> None:
             st.session_state.agent_messages.append(
                 {"role": "assistant", "content": response["output"]}
             )
+        except StopException:
+            raise
         except Exception as e:
             st.error(f"An error occurred: {e}")
